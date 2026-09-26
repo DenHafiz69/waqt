@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -30,6 +31,22 @@ type MonthlySchedule struct {
 }
 
 func main() {
+
+	requestUrl := "https://api.waktusolat.app/v2/solat/gps/3.068498/101.630263?year=2026&month=8"
+
+	req, _ := http.NewRequest("GET", requestUrl, nil)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("Error")
+	}
+
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+
+	fmt.Println(res)
+	fmt.Println(string(body))
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Hello from Go!")
 	})
