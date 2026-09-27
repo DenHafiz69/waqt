@@ -29,7 +29,7 @@ func (u UnixTime) MarshalJSON() ([]byte, error) {
 
 type DailyPrayerTime struct {
 	Day     int      `json:"day"`
-	Hijri   UnixTime `json:"hijri"`
+	Hijri   string   `json:"hijri"`
 	Imsak   UnixTime `json:"imsak"`
 	Fajr    UnixTime `json:"fajr"`
 	Syuruk  UnixTime `json:"syuruk"`
@@ -50,6 +50,19 @@ type MonthlySchedule struct {
 }
 
 func main() {
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello from Go!")
+	})
+
+	fmt.Println("Today's prayer time:", GetDailyPrayerTime())
+
+	log.Println("Listening on :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+
+}
+
+func GetDailyPrayerTime() DailyPrayerTime {
 
 	requestUrl := "https://api.waktusolat.app/v2/solat/gps/3.068498/101.630263?year=2026&month=8"
 
@@ -72,12 +85,18 @@ func main() {
 		fmt.Printf("Unmarshal failed: %v", err)
 	}
 
-	fmt.Println(schedule)
+	day := time.Now().Local().Day()
+	fmt.Println("Day:", day)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hello from Go!")
-	})
+	TodaySchedule := DailyPrayerTime{}
 
-	log.Println("Listening on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	for _, v := range schedule.Prayers {
+		if v.Day == day {
+			TodaySchedule = v
+			break
+		}
+	}
+
+	return TodaySchedule
+
 }
