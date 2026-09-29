@@ -40,7 +40,7 @@ type DailyPrayerTime struct {
 	Isha    UnixTime `json:"isha"`
 }
 
-type MonthlySchedule struct {
+type MonthlyPrayerTime struct {
 	Zone        string            `json:"zone"`
 	Year        int               `json:"year"`
 	Month       string            `json:"month"`
@@ -49,7 +49,7 @@ type MonthlySchedule struct {
 	Prayers     []DailyPrayerTime `json:"prayers"`
 }
 
-func GetDailyPrayerTime() DailyPrayerTime {
+func GetMonthlyPrayerTime() MonthlyPrayerTime {
 
 	requestUrl := "https://api.waktusolat.app/v2/solat/gps/3.068498/101.630263?year=2026&month=8"
 
@@ -66,11 +66,19 @@ func GetDailyPrayerTime() DailyPrayerTime {
 		log.Printf("io read error: %v", err)
 	}
 
-	schedule := MonthlySchedule{}
+	schedule := MonthlyPrayerTime{}
 
 	if err := json.Unmarshal(body, &schedule); err != nil {
 		log.Printf("unmarshal error: %v", err)
 	}
+
+	return schedule
+
+}
+
+func GetDailyPrayerTime() DailyPrayerTime {
+
+	schedule := GetMonthlyPrayerTime()
 
 	day := time.Now().Local().Day()
 	fmt.Println("Day:", day)
