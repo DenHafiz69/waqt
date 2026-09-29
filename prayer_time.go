@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 )
@@ -56,19 +57,19 @@ func GetDailyPrayerTime() DailyPrayerTime {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Printf("Error: %v", err)
+		log.Printf("request error: %v", err)
 	}
 
 	defer res.Body.Close()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		fmt.Printf("Error: %v", err)
+		log.Printf("io read error: %v", err)
 	}
 
 	schedule := MonthlySchedule{}
 
 	if err := json.Unmarshal(body, &schedule); err != nil {
-		fmt.Printf("Unmarshal failed: %v", err)
+		log.Printf("unmarshal error: %v", err)
 	}
 
 	day := time.Now().Local().Day()

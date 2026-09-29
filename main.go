@@ -4,13 +4,23 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 )
 
 func main() {
 	http.HandleFunc("/", homeHandler)
 
+	srv := &http.Server{
+		Addr:              ":8080",
+		Handler:           http.DefaultServeMux,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
 	log.Println("Listening on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(srv.ListenAndServe())
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -18,5 +28,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 
 	response := GetDailyPrayerTime()
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("encoding response: %v", err)
+	}
 }
