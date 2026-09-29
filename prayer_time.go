@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -78,6 +79,13 @@ func GetMonthlyPrayerTime() MonthlyPrayerTime {
 
 func GetDailyPrayerTime() DailyPrayerTime {
 
+	// If current month and year match, use local schedule
+	localSchedule, err := os.Open("monthly_schedule.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer localSchedule.Close()
+
 	schedule := GetMonthlyPrayerTime()
 
 	day := time.Now().Local().Day()
@@ -93,4 +101,33 @@ func GetDailyPrayerTime() DailyPrayerTime {
 	}
 
 	return TodaySchedule
+}
+
+func CurrentServerTime() time.Time {
+
+	// Get the current server time, in other words, time in Malaysia
+
+	requestUrl := "https://api.waktusolat.app/chrono"
+
+	req, err := http.NewRequest("GET", requestUrl, nil)
+	if err != nil {
+		log.Printf("request failure: %v", err)
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("get respond failure: %v", err)
+	}
+
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+
+	serverTime := time.Time{}
+
+	if err := json.Unmarshal(body, &serverTime); err != nil {
+		log.Printf("unmarshal error: %v", err)
+	}
+
+	return serverTime
 }
