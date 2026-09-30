@@ -2,11 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -50,7 +53,7 @@ type MonthlyPrayerTime struct {
 	Prayers     []DailyPrayerTime `json:"prayers"`
 }
 
-func GetMonthlyPrayerTime() MonthlyPrayerTime {
+func GetMonthlyPrayerTime(Month int) MonthlyPrayerTime {
 
 	requestUrl := "https://api.waktusolat.app/v2/solat/gps/3.068498/101.630263?year=2026&month=8"
 
@@ -74,21 +77,60 @@ func GetMonthlyPrayerTime() MonthlyPrayerTime {
 	}
 
 	return schedule
+}
 
+func GetAndWriteNewMonthToFile(currentMonth int) error {
+
+	schedule := GetMonthlyPrayerTime(currentMonth)
+
+	file, err := os.Create("monthly_schedule.json")
+	if err != nil {
+		return fmt.Errorf("error creating file: %v", err)
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(schedule); err != nil {
+		return fmt.Errorf("error encoding file: %v", err)
+	}
+
+	return nil
 }
 
 func GetDailyPrayerTime() DailyPrayerTime {
 
+	currentMonth := int(time.Now().Month())
+	currentYear := int(time.Now().Year())
+
 	// If current month and year match, use local schedule
-	localSchedule, err := os.Open("monthly_schedule.json")
-	if err != nil {
-		log.Fatal(err)
+	file, err := os.Open("monthly_schedule.json")
+	if errors.Is(err, fs.ErrNotExist) {
+		GetAndWriteNewMonthToFile(currentMonth)
+	} else if err != nil {
+		log.Printf("error opening file: %v", err)
 	}
-	defer localSchedule.Close()
+	defer file.Close()
 
-	schedule := GetMonthlyPrayerTime()
+	schedule := MonthlyPrayerTime{}
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&schedule); err != nil {
+		log.Printf("error decoding file: %v", err)
+	}
 
-	day := time.Now().Local().Day()
+	// Check if month and year match with local schedule
+	scheduleMonth, err := strconv.Atoi(schedule.Month)
+	if err != nil {
+		log.Printf("convert to int error: %v", err)
+	}
+
+	scheduleYear := int(schedule.Year)
+
+	if scheduleMonth != currentMonth || scheduleYear != currentYear {
+		GetAndWriteNewMonthToFile(currentMonth)
+	}
+
+	day := time.Now().Day()
+
 	fmt.Println("Day:", day)
 
 	TodaySchedule := DailyPrayerTime{}
@@ -101,33 +143,4 @@ func GetDailyPrayerTime() DailyPrayerTime {
 	}
 
 	return TodaySchedule
-}
-
-func CurrentServerTime() time.Time {
-
-	// Get the current server time, in other words, time in Malaysia
-
-	requestUrl := "https://api.waktusolat.app/chrono"
-
-	req, err := http.NewRequest("GET", requestUrl, nil)
-	if err != nil {
-		log.Printf("request failure: %v", err)
-	}
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Printf("get respond failure: %v", err)
-	}
-
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-
-	serverTime := time.Time{}
-
-	if err := json.Unmarshal(body, &serverTime); err != nil {
-		log.Printf("unmarshal error: %v", err)
-	}
-
-	return serverTime
 }
