@@ -79,54 +79,74 @@ func GetMonthlyPrayerTime(Month int) MonthlyPrayerTime {
 	return schedule
 }
 
-func GetAndWriteNewMonthToFile(currentMonth int) error {
+func GetAndWriteNewMonthToFile(currentMonth int) (MonthlyPrayerTime, error) {
 
 	schedule := GetMonthlyPrayerTime(currentMonth)
 
 	file, err := os.Create("monthly_schedule.json")
 	if err != nil {
-		return fmt.Errorf("error creating file: %v", err)
+		return MonthlyPrayerTime{}, fmt.Errorf("error creating file: %v", err)
 	}
 	defer file.Close()
 
 	encoder := json.NewEncoder(file)
 	if err := encoder.Encode(schedule); err != nil {
-		return fmt.Errorf("error encoding file: %v", err)
+		return MonthlyPrayerTime{}, fmt.Errorf("error encoding file: %v", err)
 	}
 
-	return nil
+	return schedule, nil
 }
 
-func GetDailyPrayerTime() DailyPrayerTime {
+func GetLocalSchedule(filepath string) (MonthlyPrayerTime, error) {
 
 	currentMonth := int(time.Now().Month())
 	currentYear := int(time.Now().Year())
 
 	// If current month and year match, use local schedule
-	file, err := os.Open("monthly_schedule.json")
+	file, err := os.Open(filepath)
 	if errors.Is(err, fs.ErrNotExist) {
-		GetAndWriteNewMonthToFile(currentMonth)
+		// If file not exist, get the file, and return the schedule
+		schedule, err := GetAndWriteNewMonthToFile(currentMonth)
+		if err != nil {
+			return MonthlyPrayerTime{}, fmt.Errorf("error getting monthly schedule: %v", err)
+		}
+		return schedule, nil
 	} else if err != nil {
-		log.Printf("error opening file: %v", err)
+		return MonthlyPrayerTime{}, fmt.Errorf("error opening file: %v", err)
 	}
 	defer file.Close()
 
 	schedule := MonthlyPrayerTime{}
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&schedule); err != nil {
-		log.Printf("error decoding file: %v", err)
+		return MonthlyPrayerTime{}, fmt.Errorf("error decoding file: %v", err)
 	}
 
 	// Check if month and year match with local schedule
 	scheduleMonth, err := strconv.Atoi(schedule.Month)
 	if err != nil {
-		log.Printf("convert to int error: %v", err)
+		return MonthlyPrayerTime{}, fmt.Errorf("convert to int error: %v", err)
 	}
 
 	scheduleYear := int(schedule.Year)
 
 	if scheduleMonth != currentMonth || scheduleYear != currentYear {
-		GetAndWriteNewMonthToFile(currentMonth)
+		schedule, err := GetAndWriteNewMonthToFile(currentMonth)
+		if err != nil {
+			return MonthlyPrayerTime{}, fmt.Errorf("error getting monthly schedule: %v", err)
+		}
+		return schedule, nil
+	}
+
+	return schedule, nil
+}
+
+func GetDailyPrayerTime() DailyPrayerTime {
+
+	// Call the GetLocalSchedule
+	schedule, err := GetLocalSchedule("monthly_schedule.json")
+	if err != nil {
+		log.Printf("error getting local schedule: %v", err)
 	}
 
 	day := time.Now().Day()
