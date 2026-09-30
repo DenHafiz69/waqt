@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/DenHafiz69/waqt/internal/prayer"
 	"log"
 	"net/http"
 	"time"
@@ -26,7 +27,7 @@ func main() {
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	response := GetDailyPrayerTime()
+	response := prayer.GetDailyPrayerTime()
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("encoding response: %v", err)
