@@ -78,11 +78,15 @@ func GetMonthlyPrayerTime(Month int, Year int) MonthlyPrayerTime {
 	return schedule
 }
 
+func GetFilePathFromEnv() string {
+	return os.Getenv("SCHEDULE_DATA_PATH")
+}
+
 func GetAndWriteNewMonthToFile(currentMonth int, currentYear int) (MonthlyPrayerTime, error) {
 
 	schedule := GetMonthlyPrayerTime(currentMonth, currentYear)
 
-	file, err := os.Create("monthly_schedule.json")
+	file, err := os.Create(GetFilePathFromEnv())
 	if err != nil {
 		return MonthlyPrayerTime{}, fmt.Errorf("error creating file: %v", err)
 	}
@@ -142,7 +146,7 @@ func GetSchedule(filepath string) (MonthlyPrayerTime, error) {
 
 func GetDailyPrayerTime() DailyPrayerTime {
 
-	schedule, err := GetSchedule("monthly_schedule.json")
+	schedule, err := GetSchedule(GetFilePathFromEnv())
 	if err != nil {
 		log.Printf("error getting schedule: %v", err)
 	}

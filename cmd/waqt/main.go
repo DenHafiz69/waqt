@@ -3,12 +3,21 @@ package main
 import (
 	"encoding/json"
 	"github.com/DenHafiz69/waqt/internal/prayer"
+	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"time"
 )
 
 func main() {
+
+	// Load .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Printf("error loading .env: %v", err)
+		return
+	}
+
 	http.HandleFunc("/", homeHandler)
 
 	srv := &http.Server{
