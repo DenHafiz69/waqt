@@ -96,7 +96,7 @@ func GetAndWriteNewMonthToFile(currentMonth int, currentYear int) (MonthlyPrayer
 	return schedule, nil
 }
 
-func GetLocalSchedule(filepath string) (MonthlyPrayerTime, error) {
+func GetSchedule(filepath string) (MonthlyPrayerTime, error) {
 
 	currentMonth := int(time.Now().Month())
 	currentYear := int(time.Now().Year())
@@ -142,15 +142,12 @@ func GetLocalSchedule(filepath string) (MonthlyPrayerTime, error) {
 
 func GetDailyPrayerTime() DailyPrayerTime {
 
-	// Call the GetLocalSchedule
-	schedule, err := GetLocalSchedule("monthly_schedule.json")
+	schedule, err := GetSchedule("monthly_schedule.json")
 	if err != nil {
-		log.Printf("error getting local schedule: %v", err)
+		log.Printf("error getting schedule: %v", err)
 	}
 
 	day := time.Now().Day()
-
-	fmt.Println("Day:", day)
 
 	todaySchedule := DailyPrayerTime{}
 
