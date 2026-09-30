@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -53,9 +52,9 @@ type MonthlyPrayerTime struct {
 	Prayers     []DailyPrayerTime `json:"prayers"`
 }
 
-func GetMonthlyPrayerTime(Month int) MonthlyPrayerTime {
+func GetMonthlyPrayerTime(Month int, Year int) MonthlyPrayerTime {
 
-	requestUrl := "https://api.waktusolat.app/v2/solat/gps/3.068498/101.630263?year=2026&month=8"
+	requestUrl := fmt.Sprintf("https://api.waktusolat.app/v2/solat/gps/3.068498/101.630263?year=%v&month=%v", Year, Month)
 
 	req, _ := http.NewRequest("GET", requestUrl, nil)
 
@@ -79,9 +78,9 @@ func GetMonthlyPrayerTime(Month int) MonthlyPrayerTime {
 	return schedule
 }
 
-func GetAndWriteNewMonthToFile(currentMonth int) (MonthlyPrayerTime, error) {
+func GetAndWriteNewMonthToFile(currentMonth int, currentYear int) (MonthlyPrayerTime, error) {
 
-	schedule := GetMonthlyPrayerTime(currentMonth)
+	schedule := GetMonthlyPrayerTime(currentMonth, currentYear)
 
 	file, err := os.Create("monthly_schedule.json")
 	if err != nil {
@@ -103,10 +102,16 @@ func GetLocalSchedule(filepath string) (MonthlyPrayerTime, error) {
 	currentYear := int(time.Now().Year())
 
 	// If current month and year match, use local schedule
-	file, err := os.Open(filepath)
+	root, err := os.OpenRoot("./")
+	if err != nil {
+		return MonthlyPrayerTime{}, err
+	}
+	defer root.Close()
+
+	file, err := root.Open(filepath)
 	if errors.Is(err, fs.ErrNotExist) {
 		// If file not exist, get the file, and return the schedule
-		schedule, err := GetAndWriteNewMonthToFile(currentMonth)
+		schedule, err := GetAndWriteNewMonthToFile(currentMonth, currentYear)
 		if err != nil {
 			return MonthlyPrayerTime{}, fmt.Errorf("error getting monthly schedule: %v", err)
 		}
@@ -122,16 +127,10 @@ func GetLocalSchedule(filepath string) (MonthlyPrayerTime, error) {
 		return MonthlyPrayerTime{}, fmt.Errorf("error decoding file: %v", err)
 	}
 
-	// Check if month and year match with local schedule
-	scheduleMonth, err := strconv.Atoi(schedule.Month)
-	if err != nil {
-		return MonthlyPrayerTime{}, fmt.Errorf("convert to int error: %v", err)
-	}
-
 	scheduleYear := int(schedule.Year)
 
-	if scheduleMonth != currentMonth || scheduleYear != currentYear {
-		schedule, err := GetAndWriteNewMonthToFile(currentMonth)
+	if schedule.MonthNumber != currentMonth || scheduleYear != currentYear {
+		schedule, err := GetAndWriteNewMonthToFile(currentMonth, currentYear)
 		if err != nil {
 			return MonthlyPrayerTime{}, fmt.Errorf("error getting monthly schedule: %v", err)
 		}
@@ -153,14 +152,14 @@ func GetDailyPrayerTime() DailyPrayerTime {
 
 	fmt.Println("Day:", day)
 
-	TodaySchedule := DailyPrayerTime{}
+	todaySchedule := DailyPrayerTime{}
 
 	for _, v := range schedule.Prayers {
 		if v.Day == day {
-			TodaySchedule = v
+			todaySchedule = v
 			break
 		}
 	}
 
-	return TodaySchedule
+	return todaySchedule
 }
