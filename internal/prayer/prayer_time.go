@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	// "strconv"
 	"time"
 )
 
@@ -144,7 +145,20 @@ func GetSchedule(filepath string) (MonthlyPrayerTime, error) {
 	return schedule, nil
 }
 
-func GetDailyPrayerTime() DailyPrayerTime {
+type DailyPrayerTimeResponse struct {
+	Day     int    `json:"day"`
+	Hijri   string `json:"hijri"`
+	Imsak   string `json:"imsak"`
+	Fajr    string `json:"fajr"`
+	Syuruk  string `json:"syuruk"`
+	Dhuha   string `json:"dhuha"`
+	Dhuhr   string `json:"dhuhr"`
+	Asr     string `json:"asr"`
+	Maghrib string `json:"maghrib"`
+	Isha    string `json:"isha"`
+}
+
+func GetDailyPrayerTime() DailyPrayerTimeResponse {
 
 	schedule, err := GetSchedule(GetFilePathFromEnv())
 	if err != nil {
@@ -155,12 +169,25 @@ func GetDailyPrayerTime() DailyPrayerTime {
 
 	todaySchedule := DailyPrayerTime{}
 
-	for _, v := range schedule.Prayers {
-		if v.Day == day {
-			todaySchedule = v
+	for _, value := range schedule.Prayers {
+		if value.Day == day {
+			todaySchedule = value
 			break
 		}
 	}
 
-	return todaySchedule
+	res := DailyPrayerTimeResponse{
+		Day:     todaySchedule.Day,
+		Hijri:   todaySchedule.Hijri,
+		Imsak:   todaySchedule.Imsak.Format("15:04:05"),
+		Fajr:    todaySchedule.Fajr.Format("15:04:05"),
+		Syuruk:  todaySchedule.Syuruk.Format("15:04:05"),
+		Dhuha:   todaySchedule.Dhuha.Format("15:04:05"),
+		Dhuhr:   todaySchedule.Dhuhr.Format("15:04:05"),
+		Asr:     todaySchedule.Asr.Format("15:04:05"),
+		Maghrib: todaySchedule.Maghrib.Format("15:04:05"),
+		Isha:    todaySchedule.Isha.Format("15:04:05"),
+	}
+
+	return res
 }
