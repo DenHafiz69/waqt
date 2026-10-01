@@ -18,11 +18,13 @@ func main() {
 		return
 	}
 
+	mux := http.NewServeMux()
 	http.HandleFunc("/", homeHandler)
+	mux.HandleFunc("GET /healthz", healthz)
 
 	srv := &http.Server{
 		Addr:              ":8080",
-		Handler:           http.DefaultServeMux,
+		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,
@@ -41,4 +43,10 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("encoding response: %v", err)
 	}
+}
+
+func healthz(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
