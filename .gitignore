@@ -34,3 +34,4 @@ go.work.sum
 # .idea/
 # .vscode/
 server
+data/monthly_schedule.json
