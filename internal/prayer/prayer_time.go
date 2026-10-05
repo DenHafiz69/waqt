@@ -9,7 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	// "strconv"
+	"path/filepath"
 	"time"
 )
 
@@ -86,8 +86,14 @@ func GetFilePathFromEnv() string {
 func GetAndWriteNewMonthToFile(currentMonth int, currentYear int) (MonthlyPrayerTime, error) {
 
 	schedule := GetMonthlyPrayerTime(currentMonth, currentYear)
+	path := GetFilePathFromEnv()
 
-	file, err := os.Create(GetFilePathFromEnv())
+	err := os.MkdirAll(filepath.Dir(path), 0755)
+	if err != nil {
+		return MonthlyPrayerTime{}, fmt.Errorf("error creating dir: %v", err)
+	}
+
+	file, err := os.Create(path)
 	if err != nil {
 		return MonthlyPrayerTime{}, fmt.Errorf("error creating file: %v", err)
 	}
