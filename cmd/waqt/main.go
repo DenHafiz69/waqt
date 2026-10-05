@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/DenHafiz69/waqt/internal/prayer"
-	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/DenHafiz69/waqt/internal/prayer"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -19,7 +20,7 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	http.HandleFunc("/", homeHandler)
+	mux.HandleFunc("/", homeHandler)
 	mux.HandleFunc("GET /healthz", healthz)
 
 	srv := &http.Server{
