@@ -88,12 +88,20 @@ func GetAndWriteNewMonthToFile(currentMonth int, currentYear int) (MonthlyPrayer
 	schedule := GetMonthlyPrayerTime(currentMonth, currentYear)
 	path := GetFilePathFromEnv()
 
-	err := os.MkdirAll(filepath.Dir(path), 0755)
+	err := os.MkdirAll(filepath.Dir(path), 0750)
 	if err != nil {
 		return MonthlyPrayerTime{}, fmt.Errorf("error creating dir: %v", err)
 	}
 
-	file, err := os.Create(path)
+	relPath := filepath.Base(path)
+
+	root, err := os.OpenRoot(path)
+	if err != nil {
+		return MonthlyPrayerTime{}, fmt.Errorf("failed to open root: %v", err)
+	}
+	defer root.Close()
+
+	file, err := root.Create(relPath)
 	if err != nil {
 		return MonthlyPrayerTime{}, fmt.Errorf("error creating file: %v", err)
 	}
