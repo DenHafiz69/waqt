@@ -1,20 +1,38 @@
+# ------------------------------
+# Build Stage
+# ------------------------------
+FROM golang:trixie AS builder
+
+WORKDIR /src
+
+# Leverage caching for dependency downloads
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the application
+COPY . .
+
+# Compile statically linked binary
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /bin/server ./cmd/waqt/main.go
+
+# ------------------------------
+# Runtime Stage
+# ------------------------------
 FROM debian:trixie-slim
 
-# Install standard CA certificates for outbound HTTPS calls
-RUN apt update && \
-  apt install -y --no-install-recommends ca-certificates && \
-  rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
-# Run as an unprivileged user
-RUN useradd -m -u 1000 appuser
-USER appuser
+WORKDIR /app
 
-WORKDIR /home/appuser
+# Copy binary and runtime data
+COPY --from=builder /bin/server /app/server
+COPY --from=builder /src/data /app/data
 
-# Copy the locally compiled binary into the image
-COPY server .
+# Run as non-root user
+USER nobody:nogroup
 
-# Expose your server port
 EXPOSE 8080
 
-CMD ["./server"]
+ENTRYPOINT ["/app/server"]
